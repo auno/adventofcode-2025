@@ -10,15 +10,14 @@ fi
 (
   awk '1;/^## Scoreboard/{exit}' readme.md
   echo
-  echo '| Problem | Stars | Time | Rank |'
-  echo '| ------- | ----- | ---- | ---- |'
-  curl -sb "session=${AOC_SESSION_TOKEN}" "https://adventofcode.com/2024/leaderboard/self" \
+  echo '| Problem | Stars | Part 1 | Part 2 |'
+  echo '| ------- | ----- | ------ | ------ |'
+  curl -sb "session=${AOC_SESSION_TOKEN}" "https://adventofcode.com/2025/leaderboard/self" \
     | sed -En '/<pre>/,${p;/<\/pre>/q}' \
-    | sed -En '/^Day\b/,${p}' \
-    | tail -n +2 \
+    | sed -En '/^ *[0-9]+\b/,${p}' \
     | head -n -1 \
     | perl -MHTML::Entities -pe 'decode_entities($_);' \
-    | awk '{ printf("| [Day %02d](./src/day%02d.rs) | %s%s | %s / %s | %s / %s |\n", $1, $1, ($3!="-")?"⭐":"", ($6!="-")?"⭐":"", $2, $5, $3, $6 ) }' \
+    | awk '{ printf("| [Day %02d](./src/day%02d.rs) | %s%s | %s | %s |\n", $1, $1, ($2!="-")?"⭐":"", ($3!="-")?"⭐":"", $2, $3 ) }' \
     | tac
 ) > readme.tmp.md
 
