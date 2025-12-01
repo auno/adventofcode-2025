@@ -10,3 +10,7 @@ naming), you can run any specific day's solution using something like
     cargo aoc --day 1
 
 ## Scoreboard
+
+| Problem | Stars | Part 1 | Part 2 |
+| ------- | ----- | ------ | ------ |
+| [Day 01](./src/day01.rs) | ⭐⭐ | 05:19:37 | 06:12:01 |
