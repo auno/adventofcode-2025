@@ -59,12 +59,16 @@ fn sequence(rotations: &[Rotation]) -> Vec<i32> {
         })
 }
 
-#[aoc(day1, part1)]
-fn part1(rotations: &Input) -> usize {
+fn solve(rotations: &Input) -> usize {
     sequence(rotations)
         .into_iter()
         .filter(|position| *position == 0)
         .count()
+}
+
+#[aoc(day1, part1)]
+fn part1(rotations: &Input) -> usize {
+    solve(rotations)
 }
 
 #[aoc(day1, part2)]
@@ -79,10 +83,7 @@ fn part2(rotations: &Input) -> usize {
         })
         .collect_vec();
 
-    sequence(rotations.as_slice())
-        .into_iter()
-        .filter(|position| *position == 0)
-        .count()
+    solve(&rotations)
 }
 
 #[cfg(test)]
