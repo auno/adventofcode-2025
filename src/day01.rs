@@ -1,7 +1,10 @@
+use std::iter::repeat_n;
+
 use anyhow::{bail, Error, Result};
 use aoc_runner_derive::{aoc, aoc_generator};
 use itertools::Itertools;
 
+#[derive(Clone)]
 enum Rotation {
     Left(i32),
     Right(i32),
@@ -64,6 +67,24 @@ fn part1(rotations: &Input) -> usize {
         .count()
 }
 
+#[aoc(day1, part2)]
+fn part2(rotations: &Input) -> usize {
+    let rotations = rotations
+        .iter()
+        .flat_map(|rotation| {
+            match rotation {
+                Rotation::Left(distance) => repeat_n(Rotation::Left(1), *distance as usize),
+                Rotation::Right(distance) => repeat_n(Rotation::Right(1), *distance as usize),
+            }
+        })
+        .collect_vec();
+
+    sequence(rotations.as_slice())
+        .into_iter()
+        .filter(|position| *position == 0)
+        .count()
+}
+
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
@@ -89,7 +110,17 @@ mod tests {
     }
 
     #[test]
+    fn part2_example1() {
+        assert_eq!(6, part2(&parse(EXAMPLE1).unwrap()));
+    }
+
+    #[test]
     fn part1_input() {
         assert_eq!(1021, part1(&parse(include_str!("../input/2025/day1.txt")).unwrap()));
+    }
+
+    #[test]
+    fn part2_input() {
+        assert_eq!(5933, part2(&parse(include_str!("../input/2025/day1.txt")).unwrap()));
     }
 }
