@@ -1,4 +1,4 @@
-use std::iter::repeat_n;
+use std::{iter::repeat_n, str::FromStr};
 
 use anyhow::{bail, Error, Result};
 use aoc_runner_derive::{aoc, aoc_generator};
@@ -10,26 +10,26 @@ enum Rotation {
     Right(i32),
 }
 
-impl TryFrom<&str> for Rotation {
-    type Error = Error;
+impl FromStr for Rotation {
+    type Err = Error;
 
-    fn try_from(value: &str) -> Result<Self> {
-        let Some((direction, distance)) = value.split_at_checked(1) else {
-            bail!("Invalid Rotation: {value}");
+    fn from_str(s: &str) -> Result<Self> {
+        let Some((direction, distance)) = s.split_at_checked(1) else {
+            bail!("Invalid Rotation: {s}");
         };
 
         let Ok(distance) = distance.parse() else {
-            bail!("Invalid Rotation distance: {distance} (in {value})");
+            bail!("Invalid Rotation distance: {distance} (in {s})");
         };
 
         if distance < 0 {
-            bail!("Invalid Rotation distance: {distance} (in {value})");
+            bail!("Invalid Rotation distance: {distance} (in {s})");
         }
 
         match direction {
             "L" => Ok(Rotation::Left(distance)),
             "R" => Ok(Rotation::Right(distance)),
-            _ => bail!("Invalid Rotation direction: {direction} (in {value})"),
+            _ => bail!("Invalid Rotation direction: {direction} (in {s})"),
         }
     }
 }
@@ -40,7 +40,7 @@ type Input = Vec<Rotation>;
 fn parse(input: &str) -> Result<Input> {
     input
         .lines()
-        .map(|line| line.try_into())
+        .map(|line| line.parse())
         .try_collect()
 }
 
