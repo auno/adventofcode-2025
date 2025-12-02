@@ -19,24 +19,44 @@ fn parse(input: &str) -> Result<Input> {
         .try_collect()
 }
 
-fn is_invalid(product_id: &usize) -> bool {
-    let product_id = product_id.to_string();
-    let len = product_id.len();
-
-    if !len.is_multiple_of(2) {
-        return false;
-    }
-
-    product_id[0..(len / 2)] == product_id[(len / 2)..]
-}
-
-#[aoc(day2, part1)]
-fn part1(ranges: &Input) -> usize {
+fn solve(ranges: &Input, is_invalid: impl Fn(&usize) -> bool) -> usize {
     ranges
         .iter()
         .flat_map(|(start, end)| *start..=*end)
         .filter(is_invalid)
         .sum()
+}
+
+#[aoc(day2, part1)]
+fn part1(ranges: &Input) -> usize {
+    solve(ranges, |product_id| {
+        let product_id = product_id.to_string();
+        let len = product_id.len();
+
+        if !len.is_multiple_of(2) {
+            return false;
+        }
+
+        product_id[0..(len / 2)] == product_id[(len / 2)..]
+    })
+}
+
+#[aoc(day2, part2)]
+fn part2(ranges: &Input) -> usize {
+    solve(ranges, |product_id| {
+        let product_id = product_id.to_string();
+        let len = product_id.len();
+
+        (1..=(len / 2)).any(|pat_len| {
+            if !len.is_multiple_of(pat_len) {
+                return false;
+            }
+
+            (0..=(len - pat_len))
+                .step_by(pat_len)
+                .all(|offset| product_id[offset..(offset + pat_len)] == product_id[0..pat_len])
+        })
+    })
 }
 
 #[cfg(test)]
@@ -59,5 +79,15 @@ mod tests {
     #[test]
     fn part1_input() {
         assert_eq!(64215794229, part1(&parse(include_str!("../input/2025/day2.txt")).unwrap()));
+    }
+
+    #[test]
+    fn part2_example1() {
+        assert_eq!(4174379265, part2(&parse(EXAMPLE1).unwrap()));
+    }
+
+    #[test]
+    fn part2_input() {
+        assert_eq!(85513235135, part2(&parse(include_str!("../input/2025/day2.txt")).unwrap()));
     }
 }
