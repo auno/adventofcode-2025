@@ -1,6 +1,7 @@
 use aoc_runner_derive::aoc_lib;
 
 mod day01;
+mod day02;
 
 mod utils;
 
