@@ -1,6 +1,5 @@
 use anyhow::{Context, Result};
 use aoc_runner_derive::{aoc, aoc_generator};
-use hashbrown::HashMap;
 use itertools::Itertools;
 
 type Joltage = usize;
@@ -24,13 +23,13 @@ fn parse(input: &str) -> Result<Input> {
 
 fn largest_joltage(bank: &[Joltage], num_batteries: usize) -> Option<Joltage> {
     fn largest_joltage_with_cache(
-        cache: &mut HashMap<(usize, usize), Option<usize>>,
+        cache: &mut Vec<Vec<Option<Option<usize>>>>,
         bank: &[Joltage],
         bank_offset: usize,
         num_batteries: usize
     ) -> Option<usize> {
-        if let Some(joltage) = cache.get(&(bank_offset, num_batteries)) {
-            return *joltage;
+        if let Some(joltage) = cache[bank_offset][num_batteries] {
+            return joltage;
         }
 
         let joltage =
@@ -48,11 +47,11 @@ fn largest_joltage(bank: &[Joltage], num_batteries: usize) -> Option<Joltage> {
                     .max()
             };
 
-        cache.insert((bank_offset, num_batteries), joltage);
+        cache[bank_offset][num_batteries] = Some(joltage);
         joltage
     }
 
-    let mut cache = HashMap::new();
+    let mut cache = vec![vec![None; 13]; bank.len() + 1];
     largest_joltage_with_cache(&mut cache, bank, 0, num_batteries)
 }
 
