@@ -63,14 +63,29 @@ impl Position {
         Position(i as isize, j as isize)
     }
 
-    pub fn step(self, direction: Direction) -> Position {
-        let Position(i, j) = self;
+    pub fn step(&self, direction: Direction) -> Position {
+        let Position(i, j) = *self;
         match direction {
             Direction::Up => Position(i - 1, j),
             Direction::Down => Position(i + 1, j),
             Direction::Left => Position(i, j - 1),
             Direction::Right => Position(i, j + 1),
         }
+    }
+
+    pub fn neighboring_positions(&self) -> impl IntoIterator<Item = Position> {
+        let Position(i, j) = *self;
+
+        [
+            Position(i - 1, j - 1),
+            Position(i, j - 1),
+            Position(i + 1, j - 1),
+            Position(i - 1, j),
+            Position(i + 1, j),
+            Position(i - 1, j + 1),
+            Position(i, j + 1),
+            Position(i + 1, j + 1),
+        ]
     }
 }
 
@@ -298,7 +313,7 @@ impl<T> Grid<T> where
     T: Copy + Clone + TryFrom<char>,
     Result<T, <T as TryFrom<char>>::Error>: Context<T, <T as TryFrom<char>>::Error>,
 {
-    pub fn parse_with_position_detection(input: &str, markers: &[char], replacement: T) -> Result<(Grid<T>, MarkerPositions)> {
+    pub fn parse_with_position_detection(input: &str, markers: &[char], replacement: Option<T>) -> Result<(Grid<T>, MarkerPositions)> {
         use anyhow::Ok;
 
         let rows = input.lines().count();
@@ -311,8 +326,13 @@ impl<T> Grid<T> where
                 .chars()
                 .enumerate()
                 .map(move |(j, c)| {
-                    if markers.contains(&c) {
-                        Ok((replacement, Some((c, Position(i as isize, j as isize)))))
+                    if markers.contains(&c) && let Some(replacement_tile) = replacement {
+                        Ok((replacement_tile, Some((c, Position(i as isize, j as isize)))))
+                    } else if markers.contains(&c) {
+                        Ok((
+                            T::try_from(c).context(format!("Unable to parse character: {c}"))?,
+                            Some((c, Position(i as isize, j as isize))),
+                        ))
                     } else {
                         Ok((T::try_from(c).context(format!("Unable to parse character: {c}"))?, None))
                     }
@@ -323,5 +343,10 @@ impl<T> Grid<T> where
         let positions = ps.into_iter().flatten().into_group_map();
 
         Ok((Grid::from(rows, cols, ts), positions))
+    }
+
+    pub fn parse(input: &str) -> Result<Grid<T>> {
+        Self::parse_with_position_detection(input, &[], None)
+            .map(|(grid, _)| grid)
     }
 }
