@@ -36,6 +36,41 @@ fn part1((fresh_ranges, available): &Input) -> usize {
         .count()
 }
 
+#[aoc(day5, part2)]
+fn part2((fresh_ranges, _): &Input) -> usize {
+    let mut ranges = fresh_ranges.clone();
+    ranges.sort();
+
+    let mut i = 0;
+    while i + 1 < ranges.len() {
+        // range[i + 1] completely contained in range[i]
+        if ranges[i + 1].1 <= ranges[i].1 {
+            ranges.remove(i + 1);
+            continue;
+        }
+
+        // range[i] completely contained in range[i + 1]
+        if ranges[i + 1].0 == ranges[i].0 && ranges[i + 1].1 >= ranges[i].1 {
+            ranges.remove(i);
+            continue;
+        }
+
+        // range[i + 1] overlaps range[i]
+        if ranges[i + 1].0 <= ranges[i].1 {
+            ranges[i].1 = ranges[i + 1].0 - 1;
+            i += 1;
+            continue;
+        }
+
+        i += 1;
+    }
+
+    ranges
+        .into_iter()
+        .map(|(start, end)| end - start + 1)
+        .sum()
+}
+
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
@@ -64,5 +99,15 @@ mod tests {
     #[test]
     fn part1_input() {
         assert_eq!(770, part1(&parse(include_str!("../input/2025/day5.txt")).unwrap()));
+    }
+
+    #[test]
+    fn part2_example1() {
+        assert_eq!(14, part2(&parse(EXAMPLE1).unwrap()));
+    }
+
+    #[test]
+    fn part2_input() {
+        assert_eq!(357674099117260, part2(&parse(include_str!("../input/2025/day5.txt")).unwrap()));
     }
 }
