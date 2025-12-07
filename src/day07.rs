@@ -2,7 +2,7 @@ use anyhow::{bail, Context, Error, Result};
 use aoc_runner_derive::{aoc, aoc_generator};
 use itertools::Itertools;
 
-use crate::utils::grid::{Direction, Grid, Position};
+use crate::utils::grid::{Grid, Position};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Tile {
@@ -47,7 +47,7 @@ fn part1((grid, source_position): &Input) -> usize {
         let mut next_beams = vec![];
 
         for &j in &beams {
-            if grid.get(&Position(i, j)) == Some(&Tile::Splitter) {
+            if grid[(i, j)] == Tile::Splitter {
                 next_beams.extend([j - 1, j + 1]);
                 count_splits += 1;
             } else {
@@ -61,42 +61,27 @@ fn part1((grid, source_position): &Input) -> usize {
     count_splits
 }
 
-fn count_timelines(position: Position, grid: &Grid<Tile>) -> usize {
-    type Cache = Vec<Vec<Option<usize>>>;
-
-    fn count_timelines_cached(cache: &mut Cache, position: Position, grid: &Grid<Tile>) -> usize {
-        if let Some(count) = cache
-            .get(position.0 as usize)
-            .and_then(|rc| rc.get(position.1 as usize))
-            .copied()
-            .flatten()
-        {
-            return count;
-        }
-
-        let Some(tile) = grid.get(&position) else {
-            return 1;
-        };
-
-        let count = match tile {
-            Tile::Space => count_timelines_cached(cache, position.step(Direction::Down), grid),
-            Tile::Source => count_timelines_cached(cache, position.step(Direction::Down), grid),
-            Tile::Splitter => {
-                count_timelines_cached(cache, position.step(Direction::Left), grid)
-                    + count_timelines_cached(cache, position.step(Direction::Right), grid)
-            }
-        };
-
-        cache[position.0 as usize][position.1 as usize] = Some(count);
-        count
-    }
-
-    count_timelines_cached(&mut vec![vec![None; grid.cols()]; grid.rows()], position, grid)
-}
-
 #[aoc(day7, part2)]
 fn part2((grid, source_position): &Input) -> usize {
-    count_timelines(*source_position, grid)
+    let mut timelines = vec![0; grid.cols()];
+    timelines[source_position.1 as usize] = 1;
+
+    for i in (source_position.0 as usize + 1)..grid.rows() {
+        let mut next_timelines = vec![0; timelines.len()];
+
+        for j in 0..timelines.len() {
+            if grid[(i, j)] == Tile::Splitter {
+                next_timelines[j - 1] += timelines[j];
+                next_timelines[j + 1] += timelines[j];
+            } else {
+                next_timelines[j] += timelines[j];
+            }
+        }
+
+        timelines = next_timelines;
+    }
+
+    timelines.into_iter().sum()
 }
 
 #[cfg(test)]
