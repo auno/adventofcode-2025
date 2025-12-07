@@ -91,6 +91,8 @@ fn parse2(input: &str) -> Result<Input> {
     Ok((numbers, operations))
 }
 
+#[aoc(day6, part1)]
+#[aoc(day6, part2)]
 fn solve((numbers, operations): &Input) -> u64 {
     numbers
         .iter()
@@ -113,16 +115,6 @@ fn solve((numbers, operations): &Input) -> u64 {
         .sum()
 }
 
-#[aoc(day6, part1)]
-fn part1(input: &Input) -> u64 {
-    solve(input)
-}
-
-#[aoc(day6, part2)]
-fn part2(input: &Input) -> u64 {
-    solve(input)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -136,21 +128,21 @@ mod tests {
 
     #[test]
     fn part1_example1() {
-        assert_eq!(4277556, part1(&parse1(EXAMPLE1).unwrap()));
+        assert_eq!(4277556, solve(&parse1(EXAMPLE1).unwrap()));
     }
 
     #[test]
     fn part1_input() {
-        assert_eq!(5733696195703, part1(&parse1(include_str!("../input/2025/day6.txt")).unwrap()));
+        assert_eq!(5733696195703, solve(&parse1(include_str!("../input/2025/day6.txt")).unwrap()));
     }
 
     #[test]
     fn part2_example1() {
-        assert_eq!(3263827, part2(&parse2(EXAMPLE1).unwrap()));
+        assert_eq!(3263827, solve(&parse2(EXAMPLE1).unwrap()));
     }
 
     #[test]
     fn part2_input() {
-        assert_eq!(10951882745757, part2(&parse2(include_str!("../input/2025/day6.txt")).unwrap()));
+        assert_eq!(10951882745757, solve(&parse2(include_str!("../input/2025/day6.txt")).unwrap()));
     }
 }
