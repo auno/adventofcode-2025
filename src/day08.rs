@@ -34,7 +34,7 @@ fn normalize_pair(a: Point, b: Point) -> (Point, Point) {
     }
 }
 
-fn solve1(points: &Input, num_pairs: usize) -> usize {
+fn find_distances(points: &[Point]) -> HashMap<(Point, Point), f64> {
     let mut distances: HashMap<(Point, Point), f64> = HashMap::new();
 
     for (p1, p2) in points.iter().tuple_combinations() {
@@ -43,16 +43,24 @@ fn solve1(points: &Input, num_pairs: usize) -> usize {
         distances.insert(pair, distance);
     }
 
-    let edges = distances
+    distances
+}
+
+fn find_edges_by_distance(distances: &HashMap<(Point, Point), f64>) -> Vec<(Point, Point)> {
+    distances
         .into_iter()
         .sorted_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap())
-        .take(num_pairs)
-        .map(|((p1, p2), _)| (p1, p2))
-        .collect_vec();
+        .map(|((p1, p2), _)| (*p1, *p2))
+        .collect_vec()
+}
 
+fn find_circuits(
+    points: &[(isize, isize, isize)],
+    edges: &[(Point, Point)],
+) -> Vec<HashSet<(isize, isize, isize)>> {
     let mut connections: HashMap<Point, Vec<Point>> = HashMap::new();
 
-    for (p1, p2) in edges {
+    for &(p1, p2) in edges {
         connections.entry(p1).or_default().push(p2);
         connections.entry(p2).or_default().push(p1);
     }
@@ -60,17 +68,17 @@ fn solve1(points: &Input, num_pairs: usize) -> usize {
     let mut circuits = vec![];
     let mut processed: HashSet<Point> = HashSet::new();
 
-    for p in points {
-        if processed.contains(p) { continue; }
+    for &p in points {
+        if processed.contains(&p) { continue; }
 
-        let mut circuit: HashSet<&Point> = HashSet::from([p]);
+        let mut circuit: HashSet<Point> = HashSet::from([p]);
         let mut queue = VecDeque::from([p]);
 
         while let Some(q) = queue.pop_front() {
-            let Some(rs) = connections.get(q) else { continue; };
+            let Some(rs) = connections.get(&q) else { continue; };
 
-            for r in rs {
-                if !circuit.contains(r) {
+            for &r in rs {
+                if !circuit.contains(&r) {
                     queue.push_back(r);
                     circuit.insert(r);
                 }
@@ -80,6 +88,19 @@ fn solve1(points: &Input, num_pairs: usize) -> usize {
         processed.extend(circuit.iter().copied());
         circuits.push(circuit);
     }
+
+    circuits
+}
+
+fn solve1(points: &Input, num_pairs: usize) -> usize {
+    let distances = find_distances(points);
+
+    let edges = find_edges_by_distance(&distances)
+        .into_iter()
+        .take(num_pairs)
+        .collect_vec();
+
+    let circuits = find_circuits(points, &edges);
 
     circuits
         .into_iter()
@@ -93,6 +114,21 @@ fn solve1(points: &Input, num_pairs: usize) -> usize {
 #[aoc(day8, part1)]
 fn part1(input: &Input) -> usize {
     solve1(input, 1000)
+}
+
+#[aoc(day8, part2)]
+fn part2(points: &Input) -> Option<isize> {
+    let distances = find_distances(points);
+    let edges = find_edges_by_distance(&distances);
+
+    for i in 1..edges.len() {
+        if find_circuits(points, &edges[0..i]).len() == 1 {
+            let (p1, p2) = edges[i - 1];
+            return Some(p1.0 * p2.0);
+        }
+    }
+
+    None
 }
 
 #[cfg(test)]
@@ -133,4 +169,14 @@ mod tests {
     fn part1_input() {
         assert_eq!(80446, part1(&parse(include_str!("../input/2025/day8.txt")).unwrap()));
     }
+
+    #[test]
+    fn part2_example1() {
+        assert_eq!(Some(25272), part2(&parse(EXAMPLE1).unwrap()));
+    }
+
+    // #[test]
+    // fn part2_input() {
+    //     assert_eq!(Some(51294528), part2(&parse(include_str!("../input/2025/day8.txt")).unwrap()));
+    // }
 }
