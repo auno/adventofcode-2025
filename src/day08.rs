@@ -117,18 +117,25 @@ fn part1(input: &Input) -> usize {
 }
 
 #[aoc(day8, part2)]
-fn part2(points: &Input) -> Option<isize> {
+fn part2(points: &Input) -> isize {
     let distances = find_distances(points);
     let edges = find_edges_by_distance(&distances);
 
-    for i in 1..edges.len() {
-        if find_circuits(points, &edges[0..i]).len() == 1 {
-            let (p1, p2) = edges[i - 1];
-            return Some(p1.0 * p2.0);
+    let mut lower = 1;
+    let mut upper = edges.len();
+
+    while lower + 1 < upper {
+        let mid = lower + (upper - lower) / 2;
+
+        if find_circuits(points, &edges[0..mid]).len() == 1 {
+            upper = mid;
+        } else {
+            lower = mid;
         }
     }
 
-    None
+    let (p1, p2) = edges[lower];
+    p1.0 * p2.0
 }
 
 #[cfg(test)]
@@ -172,11 +179,11 @@ mod tests {
 
     #[test]
     fn part2_example1() {
-        assert_eq!(Some(25272), part2(&parse(EXAMPLE1).unwrap()));
+        assert_eq!(25272, part2(&parse(EXAMPLE1).unwrap()));
     }
 
-    // #[test]
-    // fn part2_input() {
-    //     assert_eq!(Some(51294528), part2(&parse(include_str!("../input/2025/day8.txt")).unwrap()));
-    // }
+    #[test]
+    fn part2_input() {
+        assert_eq!(51294528, part2(&parse(include_str!("../input/2025/day8.txt")).unwrap()));
+    }
 }
