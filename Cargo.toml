@@ -15,3 +15,4 @@ hashbrown = "0.15.2"
 scan_fmt = "0.2.6"
 derive_more = { version = "1.0.0", features = ["display", "try_from"] }
 automod = "1.0.14"
+rayon = "1.11.0"
