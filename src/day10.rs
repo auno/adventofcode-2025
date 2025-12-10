@@ -1,6 +1,10 @@
+use std::iter::Sum;
+
 use anyhow::{bail, Context, Result};
 use aoc_runner_derive::{aoc, aoc_generator};
 use itertools::Itertools;
+use z3::{ast::Int, Optimize};
+use rayon::prelude::*;
 
 use crate::utils::path_finding::shortest_paths_to_target;
 
@@ -53,34 +57,73 @@ fn parse(input: &str) -> Result<Input> {
         .try_collect()
 }
 
-fn find_fewest_button_presses(target: &IndicatorLights, wirings: &WiringSchematics) -> Option<usize> {
-    let (presses, _) = shortest_paths_to_target(
-        vec![false; target.len()],
-        |current| {
-            wirings
-                .iter()
-                .map(|wiring| {
-                    let neighbor = current
-                        .iter()
-                        .enumerate()
-                        .map(|(i, light_state)| light_state ^ wiring.contains(&i))
-                        .collect_vec();
-                    (neighbor, 1)
-                })
-                .collect_vec()
-        },
-        |lights| lights == target,
-    )?;
-
-    Some(presses)
-}
-
 #[aoc(day10, part1)]
 fn part1(input: &Input) -> Option<usize> {
     input
         .iter()
         .map(|(target, wirings, _)| {
-            find_fewest_button_presses(target, wirings)
+            let (presses, _) = shortest_paths_to_target(
+                vec![false; target.len()],
+                |current| {
+                    wirings
+                        .iter()
+                        .map(|wiring| {
+                            let neighbor = current
+                                .iter()
+                                .enumerate()
+                                .map(|(i, light_state)| light_state ^ wiring.contains(&i))
+                                .collect_vec();
+                            (neighbor, 1)
+                        })
+                        .collect_vec()
+                },
+                |lights| lights == target,
+            )?;
+
+            Some(presses)
+        })
+        .sum()
+}
+
+#[aoc(day10, part2)]
+fn part2(input: &Input) -> Option<u64> {
+    input
+        .par_iter()
+        .map(|(_, wirings, target)| {
+            let vars = (0..(wirings.len()))
+                .map(|_| Int::fresh_const("button"))
+                .collect_vec();
+
+            let optimizer = Optimize::new();
+
+            for var in &vars {
+                optimizer.assert(&var.ge(0));
+            }
+
+            for (i, target_value) in target.iter().enumerate() {
+                optimizer.assert(
+                    &Int::sum(
+                        (0..(wirings.len()))
+                            .filter(|j| {
+                                wirings
+                                    .get(*j)
+                                    .map(|wiring| wiring.contains(&i))
+                                    .unwrap_or_default()
+                            })
+                            .map(|j| &vars[j])
+                    ).eq(*target_value as u64)
+                )
+            }
+
+            optimizer.minimize(&Int::sum(vars.iter()));
+            optimizer.check(&[]);
+
+            let model = optimizer.get_model().unwrap();
+            vars
+                .iter()
+                .map(|var| model.eval(var, true).map(|x| x.as_u64()))
+                .map(|x| x.flatten())
+                .sum::<Option<u64>>()
         })
         .sum()
 }
@@ -105,5 +148,15 @@ mod tests {
     #[test]
     fn part1_input() {
         assert_eq!(Some(409), part1(&parse(include_str!("../input/2025/day10.txt")).unwrap()));
+    }
+
+    #[test]
+    fn part2_example1() {
+        assert_eq!(Some(33), part2(&parse(EXAMPLE1).unwrap()));
+    }
+
+    #[test]
+    fn part2_input() {
+        assert_eq!(Some(15489), part2(&parse(include_str!("../input/2025/day10.txt")).unwrap()));
     }
 }
