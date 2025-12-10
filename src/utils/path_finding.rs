@@ -10,25 +10,30 @@ use itertools::Itertools;
 type Distances<SearchNode> = HashMap<SearchNode, (usize, Vec<SearchNode>)>;
 pub type PathMap<SearchNode> = HashMap<SearchNode, Vec<SearchNode>>;
 
-fn resolve_path_map<SearchNode>(distances: &Distances<SearchNode>, targets: &[SearchNode]) -> PathMap<SearchNode> where
-    SearchNode: Copy + Clone + PartialEq + PartialOrd + Ord + Hash,
+fn resolve_path_map<SearchNode>(
+    distances: &Distances<SearchNode>,
+    targets: &[SearchNode]
+) -> PathMap<SearchNode> where
+    SearchNode: Clone + PartialEq + PartialOrd + Ord + Hash,
 {
-    let mut queue = VecDeque::from_iter(targets.iter().copied());
+    let mut queue = VecDeque::from_iter(targets.iter().cloned());
     let mut seen = HashSet::new();
-    let mut path_map = HashMap::from_iter(targets.iter().map(|target| (*target, vec![])));
+    let mut path_map = HashMap::from_iter(
+        targets.iter().map(|target| (target.clone(), vec![]))
+    );
 
     while let Some(current) = queue.pop_front() {
-        if !seen.insert(current) {
+        if !seen.insert(current.clone()) {
             continue;
         }
 
-        for &previous in distances
+        for previous in &distances
             .get(&current)
-            .map(|(_, previous)| previous)
-            .unwrap_or(&vec![])
+            .map(|(_, previous)| previous.clone())
+            .unwrap_or(vec![])
         {
-            path_map.entry(previous).or_default().push(current);
-            queue.push_back(previous);
+            path_map.entry(previous.clone()).or_default().push(current.clone());
+            queue.push_back(previous.clone());
         }
     }
 
@@ -37,11 +42,11 @@ fn resolve_path_map<SearchNode>(distances: &Distances<SearchNode>, targets: &[Se
 
 pub fn shortest_paths_to_target<SearchNode, IsTargetFn> (
     source: SearchNode,
-    neighbors: impl Fn(SearchNode) -> Vec<(SearchNode, usize)>,
+    neighbors: impl Fn(&SearchNode) -> Vec<(SearchNode, usize)>,
     is_target: IsTargetFn,
 ) -> Option<(usize, PathMap<SearchNode>)> where
-    SearchNode: Copy + Clone + PartialEq + PartialOrd + Ord + Hash,
-    IsTargetFn: Fn(SearchNode) -> bool + Copy,
+    SearchNode: Clone + PartialEq + PartialOrd + Ord + Hash,
+    IsTargetFn: Fn(&SearchNode) -> bool + Copy,
 {
     let (distances, reached_targets) = distances_impl(
         source,
@@ -67,7 +72,7 @@ pub fn shortest_paths_to_target<SearchNode, IsTargetFn> (
     let targets = potential_targets
         .iter()
         .filter(|(_, (distance, _))| *distance == min_distance)
-        .map(|(node, _)| **node)
+        .map(|&(node, _)| node.clone())
         .collect_vec();
 
     Some((min_distance, resolve_path_map(&distances, &targets)))
@@ -75,11 +80,11 @@ pub fn shortest_paths_to_target<SearchNode, IsTargetFn> (
 
 pub fn distance_to_target<SearchNode, IsTargetFn> (
     source: SearchNode,
-    neighbors: impl Fn(SearchNode) -> Vec<(SearchNode, usize)>,
+    neighbors: impl Fn(&SearchNode) -> Vec<(SearchNode, usize)>,
     is_target: IsTargetFn,
 ) -> Option<usize> where
     SearchNode: Copy + Clone + PartialEq + PartialOrd + Ord + Hash,
-    IsTargetFn: Fn(SearchNode) -> bool + Copy,
+    IsTargetFn: Fn(&SearchNode) -> bool + Copy,
 {
     let (distances, targets_reached) = distances_impl(
         source,
@@ -101,39 +106,39 @@ pub fn distance_to_target<SearchNode, IsTargetFn> (
 
 fn distances_impl<SearchNode, IsTargetFn> (
     source: SearchNode,
-    neighbors: impl Fn(SearchNode) -> Vec<(SearchNode, usize)>,
+    neighbors: impl Fn(&SearchNode) -> Vec<(SearchNode, usize)>,
     is_target: IsTargetFn,
     break_at_target: bool,
 ) -> (Distances<SearchNode>, Vec<SearchNode>) where
-    SearchNode: Copy + Clone + PartialEq + PartialOrd + Ord + Hash,
-    IsTargetFn: Fn(SearchNode) -> bool + Copy,
+    SearchNode: Clone + PartialEq + PartialOrd + Ord + Hash,
+    IsTargetFn: Fn(&SearchNode) -> bool + Copy,
 {
-    let mut distances = HashMap::from([(source, (0, vec![]))]);
-    let mut queue = BinaryHeap::from([(Reverse(0), source)]);
+    let mut distances = HashMap::from([(source.clone(), (0, vec![]))]);
+    let mut queue = BinaryHeap::from([(Reverse(0), source.clone())]);
     let mut targets_reached = vec![];
 
     while let Some((Reverse(distance), current)) = queue.pop() {
-        if is_target(current) {
-            targets_reached.push(current);
+        if is_target(&current) {
+            targets_reached.push(current.clone());
 
             if break_at_target {
                 break;
             }
         }
 
-        for (neighbor, cost) in neighbors(current) {
+        for (neighbor, cost) in neighbors(&current) {
             let (neighbor_distance, neighbor_sources) = distances
-                .entry(neighbor)
+                .entry(neighbor.clone())
                 .or_insert((usize::MAX, vec![]));
 
             match (distance + cost).cmp(neighbor_distance) {
                 Ordering::Less => {
                     *neighbor_distance = distance + cost;
-                    *neighbor_sources = vec![current];
-                    queue.push((Reverse(*neighbor_distance), neighbor));
+                    *neighbor_sources = vec![current.clone()];
+                    queue.push((Reverse(*neighbor_distance), neighbor.clone()));
                 }
                 Ordering::Equal => {
-                    neighbor_sources.push(current);
+                    neighbor_sources.push(current.clone());
                 }
                 Ordering::Greater => {},
             }
